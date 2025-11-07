@@ -1,3 +1,7 @@
+[workspace]
+members = ["crust-syscall", "crust-restorer"]
+resolver = "2"
+
 [package]
 name = "crust"
 version = "0.1.0"
@@ -26,3 +30,11 @@ libc = "0.2"
 [build-dependencies]
 # For generating protobuf code from .proto files
 prost-build = "0.13"
+
+# Workspace-level profile for restorer optimization
+[profile.release]
+opt-level = "z"           # Optimize for size
+lto = true                # Link-time optimization for better inlining
+codegen-units = 1         # Single codegen unit for maximum inlining
+panic = "abort"           # No unwinding
+strip = true              # Remove symbols

@@ -96,20 +96,12 @@ impl ImageDir {
     /// Returns PagemapHead and vector of PagemapEntry
     pub fn read_pagemap(&self, pid: u32) -> Result<Pagemap> {
         let filename = format!("pagemap-{}.img", pid);
-        let img_path = self.path.join(&filename);
-        let mut file = File::open(&img_path).map_err(|_| CrustError::ImageNotFound {
-            path: img_path.display().to_string(),
-        })?;
+        let buffer = self.read_file_buffer(&filename)?;
+        Self::parse_pagemap_data(&buffer, &filename)
+    }
 
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer)?;
-
-        if buffer.len() < 12 {
-            return Err(CrustError::InvalidImage {
-                reason: format!("{} is too small (< 12 bytes)", filename),
-            });
-        }
-
+    /// Parse pagemap data from buffer
+    fn parse_pagemap_data(buffer: &[u8], filename: &str) -> Result<Pagemap> {
         // Read the size of PagemapHead from bytes 8-11
         let head_size = u32::from_le_bytes([buffer[8], buffer[9], buffer[10], buffer[11]]) as usize;
 
@@ -125,10 +117,19 @@ impl ImageDir {
             reason: format!("Failed to decode PagemapHead: {}", e),
         })?;
 
-        // Parse stream of PagemapEntry messages
-        // After PagemapHead, entries are stored with 4-byte size prefix (little-endian u32)
+        // Parse PagemapEntry messages
+        let entries = Self::parse_pagemap_entries(buffer, 12 + head_size, filename)?;
+
+        Ok(Pagemap {
+            pages_id: head.pages_id,
+            entries,
+        })
+    }
+
+    /// Parse stream of PagemapEntry messages with 4-byte size prefixes
+    fn parse_pagemap_entries(buffer: &[u8], start_offset: usize, filename: &str) -> Result<Vec<PagemapEntry>> {
         let mut entries = Vec::new();
-        let mut pos = 12 + head_size;
+        let mut pos = start_offset;
 
         while pos + 4 <= buffer.len() {
             // Read entry size (4 bytes, little-endian)
@@ -149,17 +150,14 @@ impl ImageDir {
             match PagemapEntry::decode(entry_data) {
                 Ok(entry) => entries.push(entry),
                 Err(e) => {
-                    log::warn!("Failed to decode PagemapEntry at offset {}: {}", pos, e);
+                    log::warn!("Failed to decode PagemapEntry in {} at offset {}: {}", filename, pos, e);
                     break;
                 }
             }
             pos += entry_size;
         }
 
-        Ok(Pagemap {
-            pages_id: head.pages_id,
-            entries,
-        })
+        Ok(entries)
     }
 
     /// Read pages file containing actual memory data
