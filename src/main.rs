@@ -1,6 +1,6 @@
 use clap::Parser;
-use std::path::PathBuf;
 use crust::images::ImageDir;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(name = "crust")]
@@ -20,8 +20,7 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize logging
     let log_level = if args.verbose { "debug" } else { "info" };
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level))
-        .init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
     log::info!("crust - CRIU restore in Rust");
     log::info!("Image directory: {}", args.image_dir.display());

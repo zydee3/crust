@@ -7,6 +7,13 @@ fn main() -> Result<()> {
         "proto/core.proto",
         "proto/mm.proto",
         "proto/pagemap.proto",
+        "proto/fdinfo.proto",
+        "proto/fown.proto",
+        "proto/fs.proto",
+        "proto/creds.proto",
+        "proto/seccomp.proto",
+        "proto/timens.proto",
+        "proto/tty.proto",
     ];
 
     prost_build::Config::new()

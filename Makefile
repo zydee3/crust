@@ -28,3 +28,6 @@ uninstall:
 	@echo "Removing crust from $(BINDIR)..."
 	rm -f $(BINDIR)/crust
 	@echo "crust uninstalled."
+
+run:
+	bash test/restore.sh
