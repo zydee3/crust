@@ -168,16 +168,6 @@ fn test_sigframe_setup_task25() {
         println!("Sigframe RIP: 0x{:x}", sigframe.uc.uc_mcontext.rip);
         println!("Sigframe RSP: 0x{:x}", sigframe.uc.uc_mcontext.rsp);
         println!("Sigframe EFLAGS: 0x{:x}", sigframe.uc.uc_mcontext.eflags);
-
-        // In a real restore, we would:
-        // 1. Inject the blob
-        // 2. Set up TaskRestoreArgs with this sigframe
-        // 3. Jump to blob entry point
-        // 4. Blob calls rt_sigreturn with this frame
-        // 5. CPU state restored, execution continues at RIP
-
-        println!("Task 2.5: Sigframe setup test PASSED");
-        println!("Note: Actual rt_sigreturn execution deferred to Phase 3");
     }
 }
 
@@ -284,16 +274,9 @@ fn test_end_to_end_injection_task26() {
         // - It calls rt_sigreturn which never returns
         // - It would permanently change process state
         // - We need proper fork() or process isolation to test safely
-        //
-        // In Phase 3, we'll test actual execution in a forked child process.
-
-        println!("Step 5: Skipping actual execution (will test in Phase 3)");
         println!("Reason: rt_sigreturn never returns, needs isolated environment");
 
         // Clean up
         let _ = crust_syscall::syscalls::munmap(entry_point, 4096);
-
-        println!("Task 2.6: End-to-end injection test PASSED");
-        println!("Note: Full execution testing deferred to Phase 3 with process isolation");
     }
 }

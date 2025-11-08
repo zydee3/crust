@@ -28,7 +28,7 @@ fn main() -> anyhow::Result<()> {
     let log_level = if args.verbose { "debug" } else { "info" };
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
-    log::info!("crust - Checkpoint restore in Rust");
+    log::info!("Running restore");
     log::info!("Image directory: {}", args.image_dir.display());
 
     // Load checkpoint
@@ -62,15 +62,15 @@ fn main() -> anyhow::Result<()> {
         bootstrap_size,
     )?;
 
-    log::info!("Found bootstrap address: 0x{:x} (size: {} bytes)", target_addr, bootstrap_size);
-    log::info!("  - Checked against {} target VMAs", checkpoint.mm.vmas.len());
-    log::info!("  - Checked against current process VMAs");
+    log::debug!("Found bootstrap address: 0x{:x} (size: {} bytes)", target_addr, bootstrap_size);
+    log::debug!("  - Checked against {} target VMAs", checkpoint.mm.vmas.len());
+    log::debug!("  - Checked against current process VMAs");
 
     // Inject restorer blob
-    log::info!("Injecting restorer blob ({} bytes)...", RESTORER_BLOB.len());
+    log::info!("Injecting restorer blob.");
     unsafe {
         let entry_point = inject_restorer_blob(target_addr)?;
-        log::info!("Blob injected successfully at 0x{:x}", entry_point);
+        log::debug!("Blob injected successfully at 0x{:x}", entry_point);
 
         // Verify blob contents
         let injected = std::slice::from_raw_parts(
@@ -79,16 +79,14 @@ fn main() -> anyhow::Result<()> {
         );
 
         if injected == RESTORER_BLOB {
-            log::info!("Blob verification: PASSED ({} bytes match)", injected.len());
+            log::debug!("Blob verification: PASSED ({} bytes match)", injected.len());
         } else {
             log::error!("Blob verification: FAILED (contents don't match)");
             return Err(anyhow::anyhow!("Blob verification failed"));
         }
 
-        log::info!("Phase 2 blob injection: SUCCESS");
-
-        // Clean up - unmap blob (Phase 3 will do actual execution)
-        log::debug!("Unmapping blob...");
+        // Clean up - unmap blob
+        log::debug!("Unmapping blob.");
         let _ = crust_syscall::syscalls::munmap(entry_point, 4096);
         log::debug!("Blob unmapped");
     }
