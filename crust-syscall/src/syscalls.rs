@@ -116,3 +116,47 @@ pub unsafe fn rt_sigreturn() -> ! {
     raw::syscall0(SYS_RT_SIGRETURN);
     core::hint::unreachable_unchecked()
 }
+
+/// Arguments structure for clone3 syscall
+#[repr(C)]
+pub struct CloneArgs {
+    pub flags: u64,
+    pub pidfd: u64,         // Pointer to store pidfd
+    pub child_tid: u64,     // Pointer for CLONE_CHILD_SETTID
+    pub parent_tid: u64,    // Pointer for CLONE_PARENT_SETTID
+    pub exit_signal: u64,
+    pub stack: u64,         // Pointer to stack bottom
+    pub stack_size: u64,
+    pub tls: u64,           // Thread-local storage pointer
+    pub set_tid: u64,       // Pointer to array of PIDs
+    pub set_tid_size: u64,  // Number of PIDs in set_tid array
+    pub cgroup: u64,        // cgroup file descriptor
+}
+
+impl CloneArgs {
+    /// Create a new CloneArgs with all fields zeroed
+    pub const fn new() -> Self {
+        CloneArgs {
+            flags: 0,
+            pidfd: 0,
+            child_tid: 0,
+            parent_tid: 0,
+            exit_signal: 0,
+            stack: 0,
+            stack_size: 0,
+            tls: 0,
+            set_tid: 0,
+            set_tid_size: 0,
+            cgroup: 0,
+        }
+    }
+}
+
+/// Clone a process with extended options (clone3 syscall)
+///
+/// Returns the child PID in the parent process, or 0 in the child process.
+#[inline(always)]
+pub unsafe fn clone3(args: *const CloneArgs, size: usize) -> Result<i32, Errno> {
+    let ret = raw::syscall2(SYS_CLONE3, args as u64, size as u64);
+    Errno::from_syscall_ret(ret).map(|v| v as i32)
+}

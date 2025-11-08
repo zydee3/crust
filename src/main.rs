@@ -1,7 +1,6 @@
 use clap::Parser;
 use crust::images::ImageDir;
-use crust::restore::{find_bootstrap_gap, inject_restorer_blob};
-use crust::restorer_blob::RESTORER_BLOB;
+use crust::restore::fork_with_pid;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -46,50 +45,47 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    // Find bootstrap region avoiding conflicts with target and current process
-    log::info!("Finding bootstrap region...");
-    const PAGE_SIZE: usize = 4096;
-    const MMAP_MIN_ADDR: usize = 0x10000;  // Typical kernel mmap_min_addr
+    // Allocate exact PID for restored process
+    let target_pid = checkpoint.pstree.pid as i32;
+    log::info!("Target PID: {}", target_pid);
+    log::info!("Forking child process with PID {}...", target_pid);
 
-    // Round up blob size to page size
-    let blob_size = RESTORER_BLOB.len();
-    let bootstrap_size = (blob_size + PAGE_SIZE - 1) & !(PAGE_SIZE - 1);
+    let fork_result = fork_with_pid(target_pid)?;
 
-    let target_addr = find_bootstrap_gap(
-        &checkpoint.mm.vmas,
-        std::process::id(),
-        MMAP_MIN_ADDR,
-        bootstrap_size,
-    )?;
+    if fork_result == 0 {
+        // Child process
+        log::debug!("Child process created with PID: {}", std::process::id());
 
-    log::debug!("Found bootstrap address: 0x{:x} (size: {} bytes)", target_addr, bootstrap_size);
-    log::debug!("  - Checked against {} target VMAs", checkpoint.mm.vmas.len());
-    log::debug!("  - Checked against current process VMAs");
-
-    // Inject restorer blob
-    log::info!("Injecting restorer blob.");
-    unsafe {
-        let entry_point = inject_restorer_blob(target_addr)?;
-        log::debug!("Blob injected successfully at 0x{:x}", entry_point);
-
-        // Verify blob contents
-        let injected = std::slice::from_raw_parts(
-            entry_point as *const u8,
-            RESTORER_BLOB.len()
-        );
-
-        if injected == RESTORER_BLOB {
-            log::debug!("Blob verification: PASSED ({} bytes match)", injected.len());
-        } else {
-            log::error!("Blob verification: FAILED (contents don't match)");
-            return Err(anyhow::anyhow!("Blob verification failed"));
+        // Verify PID allocation
+        if std::process::id() != target_pid as u32 {
+            log::error!("PID mismatch: expected {}, got {}", target_pid, std::process::id());
+            std::process::exit(1);
         }
 
-        // Clean up - unmap blob
-        log::debug!("Unmapping blob.");
-        let _ = crust_syscall::syscalls::munmap(entry_point, 4096);
-        log::debug!("Blob unmapped");
+        log::debug!("PID allocation verified");
+        std::process::exit(0);
     }
+
+    // Parent process
+    log::info!("Forked child with PID {}", fork_result);
+    log::debug!("Waiting for child to exit...");
+
+    let mut status = 0;
+    unsafe {
+        libc::waitpid(fork_result, &mut status, 0);
+    }
+
+    if libc::WIFEXITED(status) {
+        let exit_code = libc::WEXITSTATUS(status);
+        log::debug!("Child exited with code {}", exit_code);
+        if exit_code != 0 {
+            return Err(anyhow::anyhow!("Child process failed with exit code {}", exit_code));
+        }
+    } else {
+        return Err(anyhow::anyhow!("Child process terminated abnormally"));
+    }
+
+    log::info!("PID control verified successfully");
 
     Ok(())
 }

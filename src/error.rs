@@ -14,6 +14,9 @@ pub enum CrustError {
 
     #[error("Invalid image format: {reason}")]
     InvalidImage { reason: String },
+
+    #[error("PID control failed: {0}")]
+    PidControl(String),
 }
 
 pub type Result<T> = std::result::Result<T, CrustError>;
