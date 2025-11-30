@@ -2,6 +2,11 @@ use clap::Parser;
 use crust::images::ImageDir;
 use crust::restore::{fork_with_pid, kill_pid_if_exists};
 use std::path::PathBuf;
+use std::sync::OnceLock;
+use std::time::Instant;
+
+// Global start time for dmesg-style logging
+static START_TIME: OnceLock<Instant> = OnceLock::new();
 
 #[derive(Parser, Debug)]
 #[command(name = "crust")]
@@ -27,9 +32,31 @@ struct Args {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    // Initialize logging
+    // Set restore start time for dmesg-style logging
+    START_TIME.get_or_init(|| Instant::now());
+
+    // Initialize logging with dmesg-style timestamps
     let log_level = if args.verbose { "debug" } else { "info" };
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level))
+        .format(|buf, record| {
+            use std::io::Write;
+
+            // Calculate elapsed time since restore start
+            let elapsed = START_TIME.get().unwrap().elapsed();
+            let secs = elapsed.as_secs();
+            let micros = elapsed.subsec_micros();
+
+            // Format like dmesg: [  123.456789] LEVEL message
+            writeln!(
+                buf,
+                "[{:5}.{:06}] {} {}",
+                secs,
+                micros,
+                record.level(),
+                record.args()
+            )
+        })
+        .init();
 
     log::info!("Running restore");
     log::info!("Image directory: {}", args.image_dir.display());
