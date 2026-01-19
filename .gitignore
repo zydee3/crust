@@ -1,6 +1,10 @@
 /target
 **/target
-/test
+# Test artifacts
+tests/bin/
+tests/checkpoints/
+tests/criu-restores/
+tests/crust-restores/
 
 # Generated protobuf code (regenerated during build)
 /src/proto/

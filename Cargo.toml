@@ -1,12 +1,12 @@
 [workspace]
-members = ["crust-syscall", "crust-restorer"]
+members = ["crust-syscall"]
 resolver = "2"
 
 [package]
 name = "crust"
 version = "0.1.0"
 edition = "2021"
-license = "AGPL-3.0"
+license = "GPL-2.0"
 
 [dependencies]
 # Protobuf support for parsing CRIU images
@@ -29,18 +29,11 @@ libc = "0.2"
 crust-syscall = { path = "crust-syscall" }
 
 [build-dependencies]
-# For generating protobuf code from .proto files
 prost-build = "0.13"
-# For compiling C code
-cc = "1.0"
-
-# Workspace-level profile for restorer
-[profile.dev]
-panic = "abort"           # No unwinding (required for no_std restorer blob)
 
 [profile.release]
-opt-level = "z"           # Optimize for size
-lto = true                # Link-time optimization for better inlining
-codegen-units = 1         # Single codegen unit for maximum inlining
-panic = "abort"           # No unwinding
-strip = true              # Remove symbols
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,6 +1,7 @@
 use std::io::Result;
 
 fn main() -> Result<()> {
+    // Proto files to compile - add more as needed during implementation
     let proto_files = vec![
         "proto/inventory.proto",
         "proto/pstree.proto",
@@ -16,19 +17,7 @@ fn main() -> Result<()> {
         "proto/tty.proto",
     ];
 
-    prost_build::Config::new()
-        .out_dir("src/proto")
-        .compile_protos(&proto_files, &["proto/"])?;
-
-    // Compile C sigframe builder library
-    cc::Build::new()
-        .file("ffi/sigframe_builder.c")
-        .include("ffi")
-        .compile("sigframe_builder");
-
-    // Tell cargo to rerun if the C files change
-    println!("cargo:rerun-if-changed=ffi/sigframe_builder.c");
-    println!("cargo:rerun-if-changed=ffi/sigframe_builder.h");
+    prost_build::compile_protos(&proto_files, &["proto/"])?;
 
     Ok(())
 }

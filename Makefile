@@ -38,6 +38,7 @@ deps:
 install: release
 	@echo "Installing crust to $(BINDIR)..."
 	install -D -m 755 target/release/crust $(BINDIR)/crust
+	@echo "running 'install -D -m 755 target/release/crust $(BINDIR)/crust'"
 	@echo "crust installed successfully. Run 'crust --help' to get started."
 
 uninstall:
