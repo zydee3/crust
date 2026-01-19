@@ -1,7 +1,3 @@
-[workspace]
-members = ["crust-syscall"]
-resolver = "2"
-
 [package]
 name = "crust"
 version = "0.1.0"
@@ -9,11 +5,12 @@ edition = "2021"
 license = "GPL-2.0"
 
 [dependencies]
+
 # Protobuf support for parsing CRIU images
 prost = "0.13"
 prost-types = "0.13"
 
-# Error handling
+# Errors
 thiserror = "1.0"
 anyhow = "1.0"
 
@@ -21,12 +18,32 @@ anyhow = "1.0"
 log = { version = "0.4", features = ["release_max_level_info"] }
 env_logger = "0.11"
 
-# CLI argument parsing
+# CLI
 clap = { version = "4.5", features = ["derive"] }
 
 # System calls
+rustix = { version = "1.1", default-features = false, features = ["fs", "mm", "process", "thread", "event", "mount", "net"] }
+
+# Unix APIs (ptrace, capabilities, mount)
+nix = { version = "0.30", features = ["ptrace", "process", "signal", "mount", "sched"] }
+
+# Proc Parsing
+procfs = "0.18"
+
+# libc Types
 libc = "0.2"
-crust-syscall = { path = "crust-syscall" }
+
+# Linux Capabilities
+caps = "0.5"
+
+# Cgroups
+cgroups-rs = "0.3"
+
+# Seccomp BPF
+seccompiler = "0.4"
+
+# Netlink (network namespace)
+rtnetlink = "0.14"
 
 [build-dependencies]
 prost-build = "0.13"
