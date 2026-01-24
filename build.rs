@@ -3,7 +3,11 @@ use std::io::Result;
 fn main() -> Result<()> {
     // Proto files to compile - add more as needed during implementation
     let proto_files = vec![
+        "proto/cgroup.proto",
         "proto/inventory.proto",
+        "proto/memfd.proto",
+        "proto/mnt.proto",
+        "proto/pidns.proto",
         "proto/pstree.proto",
         "proto/core.proto",
         "proto/mm.proto",
@@ -13,8 +17,18 @@ fn main() -> Result<()> {
         "proto/fs.proto",
         "proto/creds.proto",
         "proto/seccomp.proto",
+        "proto/sk-inet.proto",
+        "proto/stats.proto",
         "proto/timens.proto",
         "proto/tty.proto",
+        "proto/userns.proto",
+        "proto/macvlan.proto",
+        "proto/tun.proto",
+        "proto/sysctl.proto",
+        "proto/sit.proto",
+        "proto/netdev.proto",
+        "proto/regfile.proto",
+        "proto/remap-file-path.proto",
     ];
 
     prost_build::compile_protos(&proto_files, &["proto/"])?;

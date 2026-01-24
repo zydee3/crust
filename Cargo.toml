@@ -45,6 +45,15 @@ seccompiler = "0.4"
 # Netlink (network namespace)
 rtnetlink = "0.14"
 
+# Netfilter (nftables/iptables replacement)
+rustables = "0.8"
+
+# UUID generation for CRIU run IDs
+uuid = { version = "1.11", features = ["v4"] }
+
+# Intrusive collections (matches CRIU's list_head pattern)
+intrusive-collections = "0.9"
+
 [build-dependencies]
 prost-build = "0.13"
 
